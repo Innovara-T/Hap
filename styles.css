@@ -328,7 +328,9 @@ h1 {
     border-radius: 16px;
     display: block;
     object-fit: cover;
-    max-height: 260px;
+    aspect-ratio: 16 / 9;
+    min-height: 220px;
+    background: #130a1b;
 }
 
 .video-card {

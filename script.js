@@ -39,26 +39,48 @@ const startBackgroundMusic = async () => {
 window.addEventListener('load', () => {
     startBackgroundMusic();
 
-    // Ensure local video/source URLs are properly encoded (handles spaces/parentheses)
-    document.querySelectorAll('video').forEach((v) => {
-        const src = v.getAttribute('src');
-        if (src) {
-            const enc = encodeURI(src);
-            if (enc !== src) {
-                v.setAttribute('src', enc);
-                try { v.load(); } catch (e) { }
-            }
-        }
-        v.querySelectorAll('source').forEach((s) => {
-            const ssrc = s.getAttribute('src');
-            if (ssrc) {
-                const enc2 = encodeURI(ssrc);
-                if (enc2 !== ssrc) {
-                    s.setAttribute('src', enc2);
-                    try { v.load(); } catch (e) { }
+    const videoObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+
+                const video = entry.target;
+                if (video.dataset.loaded === 'true' || !video.dataset.src) return;
+
+                video.src = video.dataset.src;
+                video.setAttribute('playsinline', '');
+                video.setAttribute('webkit-playsinline', '');
+                video.setAttribute('preload', 'metadata');
+                video.setAttribute('controls', '');
+                video.setAttribute('muted', '');
+
+                try {
+                    video.load();
+                } catch (error) {
+                    // Ignore load errors for unsupported clients.
                 }
-            }
-        });
+
+                video.dataset.loaded = 'true';
+                videoObserver.unobserve(video);
+            });
+        },
+        { rootMargin: '220px 0px 220px 0px', threshold: 0.01 }
+    );
+
+    document.querySelectorAll('video').forEach((video) => {
+        const sourceUrl = video.getAttribute('src') || video.querySelector('source')?.getAttribute('src');
+        if (sourceUrl) {
+            video.dataset.src = sourceUrl;
+            video.removeAttribute('src');
+            video.querySelectorAll('source').forEach((source) => source.remove());
+        }
+
+        video.setAttribute('preload', 'none');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.setAttribute('controls', '');
+        video.setAttribute('muted', '');
+        videoObserver.observe(video);
     });
 
     setTimeout(() => {
